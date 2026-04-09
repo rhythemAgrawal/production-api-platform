@@ -8,7 +8,7 @@ BASE_DIR = Path(__file__).resolve().parent
 
 class Settings(BaseSettings):
     database_url: str = Field(
-        default="postgresql+psycopg://postgres:postgres@localhost:5432/production_api_platform",
+        default="postgresql+psycopg://localhost:5432/production_api_platform",
         alias="DATABASE_URL",
     )
 

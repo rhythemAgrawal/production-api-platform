@@ -12,3 +12,14 @@ class ItemRead(BaseModel):
     description: str | None = None
 
     model_config = {"from_attributes": True}
+
+class UserRead(BaseModel):
+    id: int
+    username: str
+
+    model_config = {"from_attributes": True}
+
+class UserCreate(BaseModel):
+    username: str
+    password: str
+

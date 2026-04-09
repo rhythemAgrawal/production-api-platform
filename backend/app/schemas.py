@@ -23,3 +23,7 @@ class UserCreate(BaseModel):
     username: str
     password: str
 
+class LoginResponse(UserRead):
+    access_token: str
+    token_type: str
+

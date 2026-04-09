@@ -1,10 +1,15 @@
 from fastapi import APIRouter, Depends, HTTPException
+from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 from argon2 import PasswordHasher
+import time
+import jwt
+import secrets
+import hashlib
 
 from backend.app.database import get_db
 from backend.app.models import Item, User
-from backend.app.schemas import ItemCreate, ItemRead, UserRead, UserCreate
+from backend.app.schemas import ItemCreate, ItemRead, UserRead, UserCreate, LoginResponse
 
 router = APIRouter()
 
@@ -47,8 +52,8 @@ def create_user(user: UserCreate, db: Session = Depends(get_db)) -> User:
     db.refresh(db_user)
     return db_user
 
-@router.post("/login", response_model=UserRead)
-def login(user: UserCreate, db: Session = Depends(get_db)) -> User:
+@router.post("/login", response_model=LoginResponse)
+def login(user: UserCreate, db: Session = Depends(get_db)) -> JSONResponse:
     db_user = db.get(User, user.username)
 
     if not db_user:
@@ -64,4 +69,31 @@ def login(user: UserCreate, db: Session = Depends(get_db)) -> User:
         db.add(db_user)
         db.commit()
     
-    return db_user
+    content = UserRead.model_validate(db_user).model_dump()
+    
+    payload = {
+        "sub": db_user.id,
+        "iat": time.time(),
+        "exp": time.time() + 600
+    }
+
+    private_key = "private_key"
+    token = jwt.encode(payload, private_key, algorithm="RS256")
+    content.update({
+        "access_token": token,
+        "token_type": "bearer"
+    })
+
+    response = JSONResponse(content=content)
+    refresh_token = secrets.token_urlsafe(32)
+    hashed_refresh_token = hashlib.sha256(refresh_token.encode()).hexdigest
+
+    response.set_cookie(
+        key="refresh_token",
+        value=refresh_token,
+        httponly=True,
+        secure=True,
+        samesite="strict"
+    )
+    
+    return response

@@ -174,7 +174,7 @@ def logout(response: Response, refresh_token: Annotated[str | None, Cookie()] = 
     return
 
 @router.post("/refresh", response_model=LoginResponse)
-def refresh(refresh_token: Annotated[str | None, Cookie()] = None, db: Session = Depends(get_db)) -> JSONResponse:
+def refresh(response: Response, refresh_token: Annotated[str | None, Cookie()] = None, db: Session = Depends(get_db)) -> JSONResponse:
     if not refresh_token:
         raise HTTPException(status_code=401, detail="Invalid refresh token")
     
@@ -195,6 +195,7 @@ def refresh(refresh_token: Annotated[str | None, Cookie()] = None, db: Session =
         db.execute(revoke_query)
         db.commit()
 
+        response.delete_cookie("refresh_token")
         raise HTTPException(status_code=401, detail="Refresh token expired")
 
     content = UserRead.model_validate(db_user).model_dump()

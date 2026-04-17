@@ -1,5 +1,5 @@
 from collections.abc import Generator
-
+from redis import Redis
 from sqlalchemy import create_engine
 from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
@@ -20,3 +20,10 @@ def get_db() -> Generator[Session, None, None]:
         yield db
     finally:
         db.close()
+
+def get_redis() -> Generator[Redis, None, None]:
+    redis_cache = Redis(host=settings.redis_url, port=settings.redis_port, decode_responses=True)
+    try:
+        yield redis_cache
+    finally:
+        redis_cache.close()

@@ -8,7 +8,7 @@ import time
 
 from backend.app.database import get_db
 from backend.app.models import User
-from backend.config import settings
+from backend.config import settings, get_rate_limit_config
 from backend.app.database import get_redis
 
 
@@ -20,7 +20,7 @@ def get_user_from_db(user_id, db: Session = Depends(get_db)):
 
     return user[0] if user else None
 
-def check_rate_limit(credentials = Depends(security), redis_cache = Depends(get_redis)):
+def check_rate_limit(request, credentials = Depends(security), redis_cache = Depends(get_redis)):
     token = credentials.credentials
     public_key = Path(settings.jwt_public_key_path).read_text()
 
@@ -33,7 +33,12 @@ def check_rate_limit(credentials = Depends(security), redis_cache = Depends(get_
     lua_script = Path(settings.token_bucket_script_path).read_text()
     script = redis_cache.register_script(lua_script)
     user_key = "rate_limit:" + str(user_id)
-    allowed, tokens, retry_after = script(keys=[user_key], args=[100, 1, time.perf_counter(), 2, 60])
+    rate_limit_config = get_rate_limit_config(request.url.path)
+    allowed, tokens, retry_after = script(
+        keys=[user_key],
+        args=[rate_limit_config.capacity, rate_limit_config.refill_rate,
+              time.perf_counter(), rate_limit_config.requested,
+              rate_limit_config.ttl])
     headers = {
         "X-RateLimit-Remaining": tokens,
         "Retry-After": retry_after

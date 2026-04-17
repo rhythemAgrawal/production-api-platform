@@ -1,6 +1,6 @@
 from pathlib import Path
 
-from pydantic import Field
+from pydantic import Field, BaseModel
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 BASE_DIR = Path(__file__).resolve().parent
@@ -32,3 +32,20 @@ class Settings(BaseSettings):
 
 
 settings = Settings()
+
+class RateLimitConfig(BaseModel):
+    capacity: int = 100
+    refill_rate: int = 2
+    requested: int = 1
+    ttl: int = 60
+
+RATE_LIMIT_RULES = {
+    "/login": {"capacity": 5, "refill_rate": 1}
+}
+
+def get_rate_limit_config(path: str) -> RateLimitConfig:
+    rule = RATE_LIMIT_RULES.get(path)
+    if rule:
+        return RateLimitConfig(**rule)
+
+    return RateLimitConfig()

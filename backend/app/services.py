@@ -8,7 +8,7 @@ import time
 
 from backend.app.database import get_db
 from backend.app.models import User
-from backend.config import settings, get_rate_limit_config
+from backend.config import settings
 from backend.app.database import get_redis
 
 
@@ -20,20 +20,11 @@ def get_user_from_db(user_id, db: Session = Depends(get_db)):
 
     return user[0] if user else None
 
-def check_rate_limit(request, credentials = Depends(security), redis_cache = Depends(get_redis)):
-    token = credentials.credentials
-    public_key = Path(settings.jwt_public_key_path).read_text()
-
-    try:
-        payload = jwt.decode(token, public_key, algorithms=[settings.jwt_algorithm])
-        user_id = payload.get("sub", "anonymous")
-    except:
-        user_id = "anonymous"
-    
+def check_rate_limit(user_id, rate_limit_config, redis_cache = Depends(get_redis)):
     lua_script = Path(settings.token_bucket_script_path).read_text()
     script = redis_cache.register_script(lua_script)
     user_key = "rate_limit:" + str(user_id)
-    rate_limit_config = get_rate_limit_config(request.url.path)
+
     allowed, tokens, retry_after = script(
         keys=[user_key],
         args=[rate_limit_config.capacity, rate_limit_config.refill_rate,

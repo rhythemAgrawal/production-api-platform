@@ -25,3 +25,15 @@ def get_current_user(credentials = Depends(security)):
             raise HTTPException(status_code=401, detail="User not found")
     except Exception:
         raise HTTPException(status_code=401, detail="Invalid or expired token")
+    
+def extract_identity(credentials = Depends(security)):
+    token = credentials.credentials
+    public_key = Path(settings.jwt_public_key_path).read_text()
+
+    try:
+        payload = jwt.decode(token, public_key, algorithms=[settings.jwt_algorithm])
+        user_id = payload.get("sub", "anonymous")
+    except:
+        user_id = "anonymous"
+    
+    return user_id

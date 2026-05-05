@@ -5,3 +5,4 @@ pydantic-settings>=2.0
 argon2-cffi
 pyjwt[crypto]
 redis
+structlog

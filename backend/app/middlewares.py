@@ -19,7 +19,7 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     6) Add lua script loader
     """
     async def dispatch(self, request: Request, call_next):
-        user_id = extract_identity
+        user_id = extract_identity(request)
         rate_limit_config = get_rate_limit_config(request.url.path)
 
         try:

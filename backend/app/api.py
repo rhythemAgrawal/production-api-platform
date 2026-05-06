@@ -15,6 +15,7 @@ from backend.app.database import get_db
 from backend.app.models import Item, User, RefreshToken
 from backend.app.schemas import ItemCreate, ItemRead, UserRead, UserCreate, LoginResponse
 from backend.config import settings
+from backend.app.auth import get_current_user
 
 router = APIRouter()
 
@@ -39,7 +40,7 @@ def list_items(db: Session = Depends(get_db)) -> list[Item]:
 
 
 @router.get("/items/{item_id}", response_model=ItemRead)
-def get_item(item_id: int, db: Session = Depends(get_db)) -> Item:
+def get_item(item_id: int, db: Session = Depends(get_db), user: User = Depends(get_current_user)) -> Item:
     item = db.get(Item, item_id)
     if item is None:
         raise HTTPException(status_code=404, detail="Item not found")

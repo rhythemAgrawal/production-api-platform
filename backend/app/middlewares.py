@@ -1,12 +1,16 @@
+import uuid
 import time
 from fastapi import FastAPI, Request, HTTPException
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
+import structlog
 
 from backend.app.services import check_rate_limit
 from backend.config import get_rate_limit_config
 from backend.app.auth import extract_identity
 
+
+logger = structlog.get_logger()
 
 class RateLimitingMiddleware(BaseHTTPMiddleware):
     """
@@ -38,3 +42,37 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         response.headers.update(headers)
         return response
+
+class LoggingMiddleware(BaseHTTPMiddleware):
+    async def dispatch(self, request: Request, call_next):
+        request_id = request.headers.get("X-Request-ID", str(uuid.uuid4()))
+
+        structlog.contextvars.clear_contextvars()
+        structlog.contextvars.bind_contextvars(
+            request_id=request_id,
+            path=request.url.path,
+            method=request.method
+        )
+
+        start_time = time.time()
+
+        try:
+            response = await call_next(request)
+        except Exception:
+            logger.exception("Unhandled exception")
+            raise
+
+        duration = (time.time() - start_time) * 1000
+        logger.info(
+            "request_completed",
+            status_code=response.status_code,
+            duration_in_ms=duration
+        )
+
+        response.headers["X-Request-ID"] = request_id
+        return response
+
+
+def register_middlewares(app: FastAPI):
+    app.add_middleware(RateLimitingMiddleware)
+    app.add_middleware(LoggingMiddleware)

@@ -24,6 +24,8 @@ class Settings(BaseSettings):
     redis_port: int = Field(alias="REDIS_PORT")
     token_bucket_script_path: str = Field(alias="TOKEN_BUCKET_SCRIPT_PATH")
 
+    otel_exporter_endpoint: str = Field(alias="OTEL_EXPORTER_OTLP_ENDPOINT")
+
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",
         env_file_encoding="utf-8",

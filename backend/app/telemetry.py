@@ -24,17 +24,17 @@ from opentelemetry.semconv.resource import (
     ResourceAttributes,
 )
 
-from app.core.config import settings
+from backend.config import settings
 
 
 def setup_telemetry(app):
     resource = Resource.create(
         {
             ResourceAttributes.SERVICE_NAME:
-                settings.APP_NAME,
+                settings.app_name,
 
             ResourceAttributes.DEPLOYMENT_ENVIRONMENT:
-                settings.ENVIRONMENT,
+                settings.environment,
         }
     )
 
@@ -43,8 +43,7 @@ def setup_telemetry(app):
     )
 
     exporter = OTLPSpanExporter(
-        endpoint=settings
-        .OTEL_EXPORTER_OTLP_ENDPOINT,
+        endpoint=settings.otel_exporter_endpoint,
         insecure=True,
     )
 

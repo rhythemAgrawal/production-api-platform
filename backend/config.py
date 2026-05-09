@@ -25,6 +25,8 @@ class Settings(BaseSettings):
     token_bucket_script_path: str = Field(alias="TOKEN_BUCKET_SCRIPT_PATH")
 
     otel_exporter_endpoint: str = Field(alias="OTEL_EXPORTER_OTLP_ENDPOINT")
+    app_name: str = Field(alias="APP_NAME")
+    environment: str = Field(alias="ENVIRONMENT")
 
     model_config = SettingsConfigDict(
         env_file=BASE_DIR / ".env",

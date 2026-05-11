@@ -12,3 +12,7 @@ opentelemetry-exporter-otlp==1.31.1
 opentelemetry-instrumentation-fastapi==0.52b1
 opentelemetry-instrumentation-sqlalchemy==0.52b1
 opentelemetry-instrumentation-httpx==0.52b1
+opentelemetry-instrumentation-requests
+opentelemetry-instrumentation-logging
+opentelemetry-exporter-otlp-proto-grpc==1.31.1
+opentelemetry-sdk==1.31.1

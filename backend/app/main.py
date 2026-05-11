@@ -7,7 +7,7 @@ from backend.app.api import router
 from backend.app.database import Base, engine
 from backend.app.logging import setup_logging
 from backend.app.middlewares import register_middlewares
-from backend.app.telemetry import setup_telemetry
+from backend.app.observability import setup_observability
 
 
 @asynccontextmanager
@@ -18,6 +18,6 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 setup_logging()
 
 app = FastAPI(title="FastAPI PostgreSQL Demo", lifespan=lifespan)
-setup_telemetry(app)
+setup_observability(app)
 register_middlewares(app)
 app.include_router(router)

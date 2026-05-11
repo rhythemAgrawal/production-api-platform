@@ -8,6 +8,10 @@ import structlog
 from backend.app.services import check_rate_limit
 from backend.config import get_rate_limit_config
 from backend.app.auth import extract_identity
+from backend.app.observability.instruments import (
+    rate_limit_check_duration,
+    rate_limit_decisions
+)
 
 
 logger = structlog.get_logger()
@@ -26,11 +30,22 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
         user_id = extract_identity(request)
         rate_limit_config = get_rate_limit_config(request.url.path)
 
+        t0 = time.perf_counter()
         try:
             allowed, headers = check_rate_limit(user_id, rate_limit_config) # atomic check
         except Exception:
             # fail open
             allowed, headers = True, {}
+        finally:
+            rate_limit_check_duration.record(time.perf_counter()-t0)
+        
+        rate_limit_decisions.add(
+            1,
+            {
+                "outcome": "allowed" if allowed else "rejected",
+                "path": request.url.path
+            }
+        )
 
         if not allowed:
             return JSONResponse(

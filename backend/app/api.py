@@ -16,6 +16,7 @@ from backend.app.models import Item, User, RefreshToken
 from backend.app.schemas import ItemCreate, ItemRead, UserRead, UserCreate, LoginResponse
 from backend.config import settings
 from backend.app.auth import get_current_user
+from backend.app.observability.instruments import login_attempts
 
 router = APIRouter()
 
@@ -106,7 +107,13 @@ def login(user: UserCreate, db: Session = Depends(get_db)) -> JSONResponse:
         raise
 
     ph = PasswordHasher()
-    ph.verify(db_user.hashed_password, user.password)
+
+    try:
+        ph.verify(db_user.hashed_password, user.password)
+        login_attempts.add(1, {"outcome": "success"})
+    except:
+        login_attempts.add(1, {"outcome": "failure"})
+        raise
 
     if ph.check_needs_rehash(db_user.hashed_password):
         new_hashed_password = ph.hash(user.password)

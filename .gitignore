@@ -5,3 +5,4 @@ otelcol
 jaeger-2.17.0-darwin-amd64/
 .DS_Store
 .claude/
+data/

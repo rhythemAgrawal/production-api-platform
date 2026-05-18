@@ -12,8 +12,18 @@ exporters:
     endpoint: 127.0.0.1:4317
     tls:
       insecure: true
+  
+  # Metrics: re-expose as a Prometheus scrape target on :9464.
+  prometheus:
+    endpoint: 127.0.0.1:9464
+    # Keeps OTel resource attributes (service.name, env) as Prometheus labels.
+    resource_to_telemetry_conversion:
+      enabled: true
 
 service:
+  # Move Collector self-metrics off the conflicting port.
+  # This is the Collector reporting on ITSELF (dropped spans, queue depth, etc.) —
+  # different from the `prometheus` exporter above which carries your app's metrics.
   telemetry:
     metrics:
       readers:
@@ -21,10 +31,15 @@ service:
             exporter:
               prometheus:
                 host: localhost
-                port: 8889
+                port: 8890
 
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
       exporters: [otlp_grpc]
+    
+    metrics:
+      receivers: [otlp]
+      processors: [batch]
+      exporters: [prometheus]

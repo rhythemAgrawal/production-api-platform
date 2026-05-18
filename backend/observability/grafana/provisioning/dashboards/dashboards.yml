@@ -1,0 +1,13 @@
+apiVersion: 1
+
+providers:
+  - name: 'production-api-platform'
+    orgId: 1
+    folder: 'API Platform'           # the folder name shown in the Grafana sidebar
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 10        # how often Grafana re-reads the JSON files
+    allowUiUpdates: true             # let you edit in UI, then export back to JSON
+    options:
+      path: /Users/rhythemagrawal/code/production-api-platform/backend/observability/grafana/dashboards
+      foldersFromFilesStructure: false

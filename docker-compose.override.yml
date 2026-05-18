@@ -1,0 +1,42 @@
+# Local development overrides. Auto-merged on top of docker-compose.yml.
+# Anything not mentioned here is inherited unchanged.
+
+services:
+  api:
+    # Mount source from the host into the container. Edits on your Mac
+    # appear instantly inside the container — no rebuild, no restart.
+    volumes:
+      - ./backend:/app/backend
+      # Anonymous volume to shadow the host path. Without this, the
+      # container's __pycache__ dirs would leak onto your host and,
+      # worse, your host's __pycache__ (Mac arch) would shadow the
+      # container's (Linux arch) and Python would explode on import.
+      - /app/backend/__pycache__
+
+    # Override the CMD from the Dockerfile. --reload makes uvicorn watch
+    # the filesystem and restart the worker on every .py change.
+    command:
+      - uvicorn
+      - backend.app.main:app
+      - --host
+      - 0.0.0.0
+      - --port
+      - "8000"
+      - --reload
+      - --reload-dir
+      - /app/backend
+
+    # Make tracebacks/logs more developer-friendly. Override prod-y values.
+    environment:
+      ENVIRONMENT: local
+      LOG_LEVEL: DEBUG
+      PYTHONBREAKPOINT: ipdb.set_trace   # optional: `breakpoint()` opens ipdb
+
+    # Expose debugpy for VS Code / PyCharm "Attach to remote" debugging.
+    ports:
+      - "5678:5678"
+
+    # macOS file events from Docker Desktop can be slow on large trees;
+    # if --reload misses changes, switch uvicorn to polling. Costs CPU.
+    # Uncomment only if you hit the issue:
+    # command: [..., --reload, --reload-dir, /app/backend, --reload-delay, "0.25"]

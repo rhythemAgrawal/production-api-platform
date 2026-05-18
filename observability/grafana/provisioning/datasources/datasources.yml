@@ -17,7 +17,7 @@ datasources:
     type: jaeger
     uid: jaeger
     access: proxy
-    url: http://localhost:16686
+    url: http://jaegar:16686
     jsonData:
       # Wires the reverse direction: from a trace in Jaeger, jump back to
       # the matching metrics in Prometheus filtered by service.name.

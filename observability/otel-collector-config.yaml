@@ -9,7 +9,7 @@ processors:
 
 exporters:
   otlp_grpc:
-    endpoint: 127.0.0.1:4317
+    endpoint: jaegar:4317
     tls:
       insecure: true
   

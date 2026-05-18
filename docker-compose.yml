@@ -1,0 +1,117 @@
+# Compose v2 — no `version:` key, that's deprecated.
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-production_api_platform}
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"           # exposed to host for `psql` / DBeaver. Remove in prod.
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-postgres}"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  redis:
+    image: redis:7-alpine
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.57
+    restart: unless-stopped
+    environment:
+      COLLECTOR_OTLP_ENABLED: "true"
+    ports:
+      - "16686:16686"         # UI
+      - "4317:4317"           # OTLP gRPC (internal — collector pushes here)
+
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.103.0
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    volumes:
+      - ./observability/otel-collector-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4320:4320"           # OTLP gRPC from your app
+      - "9464:9464"           # Prometheus scrape endpoint
+    depends_on:
+      - jaeger
+
+  prometheus:
+    image: prom/prometheus:v2.54.0
+    restart: unless-stopped
+    command:
+      - "--config.file=/etc/prometheus/prometheus.yml"
+      - "--storage.tsdb.path=/prometheus"
+    volumes:
+      - ./observability/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  grafana:
+    image: grafana/grafana:11.1.0
+    restart: unless-stopped
+    environment:
+      GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
+      GF_SECURITY_ADMIN_PASSWORD: ${GRAFANA_PASSWORD:-admin}
+      GF_USERS_ALLOW_SIGN_UP: "false"
+    volumes:
+      - ./observability/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./observability/grafana/dashboards:/var/lib/grafana/dashboards:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3000:3000"
+    depends_on:
+      - prometheus
+
+  api:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    restart: unless-stopped
+    environment:
+      # Note the hostnames: `postgres`, `redis`, `otel-collector` —
+      # these resolve via Compose's internal DNS, not /etc/hosts.
+      DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-production_api_platform}
+      REDIS_URL: redis://redis
+      REDIS_PORT: 6379
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4320
+      APP_NAME: ${APP_NAME:-production-api}
+      ENVIRONMENT: ${ENVIRONMENT:-local}
+      JWT_PRIVATE_KEY_PATH: /run/secrets/jwt_private_key
+      JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
+      JWT_ALGORITHM: RS256
+      JWT_ACCESS_TOKEN_EXPIRES_SECONDS: 600
+      TOKEN_BUCKET_SCRIPT_PATH: /app/backend/app/scripts/token_bucket.lua  # adjust to actual path
+    volumes:
+      # Mount secrets read-only. In real prod you'd use Docker secrets or a vault.
+      - ./secrets/jwt_private.pem:/run/secrets/jwt_private_key:ro
+      - ./secrets/jwt_public.pem:/run/secrets/jwt_public_key:ro
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      otel-collector:
+        condition: service_started
+
+volumes:
+  postgres_data:
+  prometheus_data:
+  grafana_data:

@@ -1,6 +1,6 @@
 import uuid
 import time
-from fastapi import FastAPI, Request, HTTPException
+from fastapi import FastAPI, Request
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 import structlog
@@ -23,27 +23,27 @@ class RateLimitingMiddleware(BaseHTTPMiddleware):
     2) Add dynamic config via Redis/DB
     3) Custom exception classes
     4) Maybe there is a better structure for this?
-    5) Use Redis time to prevent server clock difference issues
-    6) Add lua script loader
     """
     async def dispatch(self, request: Request, call_next):
         user_id = extract_identity(request)
-        rate_limit_config = get_rate_limit_config(request.url.path)
+        path = request.url.path
+        rate_limit_config = get_rate_limit_config(path)
 
         t0 = time.perf_counter()
         try:
-            allowed, headers = check_rate_limit(user_id, rate_limit_config) # atomic check
+            allowed, headers = check_rate_limit(user_id, path, rate_limit_config) # atomic check
         except Exception:
-            # fail open
+            # fail open, but say so: a silent failure here means no limiting at all
+            logger.warning("rate_limit_check_failed", exc_info=True)
             allowed, headers = True, {}
         finally:
             rate_limit_check_duration.record(time.perf_counter()-t0)
-        
+
         rate_limit_decisions.add(
             1,
             {
                 "outcome": "allowed" if allowed else "rejected",
-                "path": request.url.path
+                "path": path
             }
         )
 

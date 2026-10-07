@@ -1,19 +1,21 @@
--- app/redis/scripts/token_bucket.lua
+-- backend/app/scripts/token_bucket.lua
 
 -- KEYS[1] = rate limit key
 -- ARGV[1] = capacity
--- ARGV[2] = refill_rate
--- ARGV[3] = current_time
--- ARGV[4] = requested_tokens
--- ARGV[5] = ttl
+-- ARGV[2] = refill_rate (tokens per second)
+-- ARGV[3] = requested_tokens
+-- ARGV[4] = ttl
 
 local key = KEYS[1]
 
 local capacity = tonumber(ARGV[1])
 local refill_rate = tonumber(ARGV[2])
-local now = tonumber(ARGV[3])
-local requested = tonumber(ARGV[4])
-local ttl = tonumber(ARGV[5])
+local requested = tonumber(ARGV[3])
+local ttl = tonumber(ARGV[4])
+
+-- Redis's own clock, so every API server agrees on the time.
+local time = redis.call("TIME")
+local now = tonumber(time[1]) + tonumber(time[2]) / 1000000
 
 local data = redis.call("HMGET", key, "tokens", "last_refill")
 
@@ -35,7 +37,7 @@ if tokens >= requested then
     tokens = tokens - requested
 else
     local needed = requested - tokens
-    retry_after = needed / refill_rate
+    retry_after = math.ceil(needed / refill_rate)
 end
 
 redis.call("HMSET", key,
@@ -45,4 +47,4 @@ redis.call("HMSET", key,
 
 redis.call("EXPIRE", key, ttl)
 
-return { allowed, tokens, retry_after }
+return { allowed, math.floor(tokens), retry_after }

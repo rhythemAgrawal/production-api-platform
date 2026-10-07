@@ -20,16 +20,18 @@ class Settings(BaseSettings):
         alias="JWT_ACCESS_TOKEN_EXPIRES_SECONDS"
     )
 
-    redis_url: str = Field(alias="REDIS_URL")
-    redis_port: int = Field(alias="REDIS_PORT")
-    token_bucket_script_path: str = Field(alias="TOKEN_BUCKET_SCRIPT_PATH")
+    redis_url: str = Field(default="redis://localhost:6379/0", alias="REDIS_URL")
+    token_bucket_script_path: str = Field(
+        default=str(BASE_DIR / "app" / "scripts" / "token_bucket.lua"),
+        alias="TOKEN_BUCKET_SCRIPT_PATH",
+    )
 
     otel_exporter_endpoint: str = Field(alias="OTEL_EXPORTER_OTLP_ENDPOINT")
     app_name: str = Field(alias="APP_NAME")
     environment: str = Field(alias="ENVIRONMENT")
 
     model_config = SettingsConfigDict(
-        env_file=BASE_DIR / ".env",
+        env_file=BASE_DIR.parent / ".env",
         env_file_encoding="utf-8",
         extra="ignore",
     )

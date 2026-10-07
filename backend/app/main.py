@@ -17,7 +17,9 @@ async def lifespan(_: FastAPI) -> AsyncIterator[None]:
 
 setup_logging()
 
-app = FastAPI(title="FastAPI PostgreSQL Demo", lifespan=lifespan)
-setup_observability(app)
+app = FastAPI(title="Production API Platform", lifespan=lifespan)
 register_middlewares(app)
+# After the other middlewares, so tracing wraps them: request logs then carry
+# trace IDs and rate-limited requests are traced and counted too.
+setup_observability(app)
 app.include_router(router)

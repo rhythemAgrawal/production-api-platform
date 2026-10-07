@@ -32,7 +32,7 @@ def setup_logging():
     structlog.configure(
         processors=[
             add_trace_context,
-            structlog.contextvars.merge_contextvars,  # 🔥 important
+            structlog.contextvars.merge_contextvars,  # adds request_id, path, method
             structlog.processors.add_log_level,
             structlog.processors.TimeStamper(fmt="iso"),
             structlog.processors.StackInfoRenderer(),

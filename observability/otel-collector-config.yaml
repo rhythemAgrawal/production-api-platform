@@ -2,42 +2,31 @@ receivers:
   otlp:
     protocols:
       grpc:
-        endpoint: localhost:4320
+        # 0.0.0.0, not localhost: the API runs in another container.
+        endpoint: 0.0.0.0:4320
 
 processors:
   batch:
 
 exporters:
-  otlp_grpc:
-    endpoint: jaegar:4317
+  otlp:
+    endpoint: jaeger:4317
     tls:
       insecure: true
   
   # Metrics: re-expose as a Prometheus scrape target on :9464.
   prometheus:
-    endpoint: 127.0.0.1:9464
+    endpoint: 0.0.0.0:9464
     # Keeps OTel resource attributes (service.name, env) as Prometheus labels.
     resource_to_telemetry_conversion:
       enabled: true
 
 service:
-  # Move Collector self-metrics off the conflicting port.
-  # This is the Collector reporting on ITSELF (dropped spans, queue depth, etc.) —
-  # different from the `prometheus` exporter above which carries your app's metrics.
-  telemetry:
-    metrics:
-      readers:
-        - pull:
-            exporter:
-              prometheus:
-                host: localhost
-                port: 8890
-
   pipelines:
     traces:
       receivers: [otlp]
       processors: [batch]
-      exporters: [otlp_grpc]
+      exporters: [otlp]
     
     metrics:
       receivers: [otlp]

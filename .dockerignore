@@ -1,10 +1,12 @@
-.venv
-__pycache__
-*.pyc
 .git
 .gitignore
+.claude
+.venv
 .env
 .env.*
+backend/.secrets
+**/__pycache__
+**/*.pyc
 .pytest_cache
 .mypy_cache
 .ruff_cache
@@ -13,3 +15,7 @@ __pycache__
 .vscode
 .DS_Store
 tests
+data
+observability
+otelcol
+jaeger-*

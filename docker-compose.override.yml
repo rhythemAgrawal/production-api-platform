@@ -26,15 +26,8 @@ services:
       - --reload-dir
       - /app/backend
 
-    # Make tracebacks/logs more developer-friendly. Override prod-y values.
     environment:
       ENVIRONMENT: local
-      LOG_LEVEL: DEBUG
-      PYTHONBREAKPOINT: ipdb.set_trace   # optional: `breakpoint()` opens ipdb
-
-    # Expose debugpy for VS Code / PyCharm "Attach to remote" debugging.
-    ports:
-      - "5678:5678"
 
     # macOS file events from Docker Desktop can be slow on large trees;
     # if --reload misses changes, switch uvicorn to polling. Costs CPU.

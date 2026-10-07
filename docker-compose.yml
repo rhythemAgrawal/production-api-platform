@@ -63,7 +63,7 @@ services:
       - "9090:9090"
 
   grafana:
-    image: grafana/grafana:11.1.0
+    image: grafana/grafana:13.0.1
     restart: unless-stopped
     environment:
       GF_SECURITY_ADMIN_USER: ${GRAFANA_USER:-admin}
@@ -87,8 +87,7 @@ services:
       # Note the hostnames: `postgres`, `redis`, `otel-collector` —
       # these resolve via Compose's internal DNS, not /etc/hosts.
       DATABASE_URL: postgresql+psycopg://${POSTGRES_USER:-postgres}:${POSTGRES_PASSWORD:-postgres}@postgres:5432/${POSTGRES_DB:-production_api_platform}
-      REDIS_URL: redis://redis
-      REDIS_PORT: 6379
+      REDIS_URL: redis://redis:6379/0
       OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4320
       APP_NAME: ${APP_NAME:-production-api}
       ENVIRONMENT: ${ENVIRONMENT:-local}
@@ -96,11 +95,10 @@ services:
       JWT_PUBLIC_KEY_PATH: /run/secrets/jwt_public_key
       JWT_ALGORITHM: RS256
       JWT_ACCESS_TOKEN_EXPIRES_SECONDS: 600
-      TOKEN_BUCKET_SCRIPT_PATH: /app/backend/app/scripts/token_bucket.lua  # adjust to actual path
     volumes:
       # Mount secrets read-only. In real prod you'd use Docker secrets or a vault.
-      - ./secrets/jwt_private.pem:/run/secrets/jwt_private_key:ro
-      - ./secrets/jwt_public.pem:/run/secrets/jwt_public_key:ro
+      - ./backend/.secrets/jwt_private_key.pem:/run/secrets/jwt_private_key:ro
+      - ./backend/.secrets/jwt_public_key.pem:/run/secrets/jwt_public_key:ro
     ports:
       - "8000:8000"
     depends_on:

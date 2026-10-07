@@ -9,5 +9,5 @@ providers:
     updateIntervalSeconds: 10        # how often Grafana re-reads the JSON files
     allowUiUpdates: true             # let you edit in UI, then export back to JSON
     options:
-      path: /Users/rhythemagrawal/code/production-api-platform/backend/observability/grafana/dashboards
+      path: /var/lib/grafana/dashboards     # where docker-compose.yml mounts ./observability/grafana/dashboards
       foldersFromFilesStructure: false

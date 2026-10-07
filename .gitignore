@@ -1,5 +1,8 @@
 __pycache__/
 *.pyc
+.pytest_cache/
+.venv/
+.env
 backend/.secrets/
 otelcol
 jaeger-2.17.0-darwin-amd64/
